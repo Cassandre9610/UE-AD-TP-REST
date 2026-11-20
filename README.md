@@ -75,9 +75,10 @@ Supprimer un film d'un emploi du temps par date
 
 Récupérer toutes les réservations
 Récupérer une réservation par identifiant utilisateur
+Récupérer la liste des films d'une réservation par identifiant utilisateur et date
+Récupérer les réservations (id user, date) par movie id
 Récupérer les réservations (id user, liste movies) par date
 Créer une réservation
-Mettre à jour une réservation par identifiant utilisateur
 Supprimer une réservation par identifiant utilisateur
 Supprimer un film d'une réservation par identifiant utilisateur, date et identifiant film
 
