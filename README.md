@@ -42,43 +42,43 @@ Pour coder Booking vous aurez besoin d’appeler d’autres services par le biai
 
 ## User
 
-Récupérer la liste de tous les utilisateurs
-Récupérer un utilisateur par son identifiant
-Récupérer un utilisateur par son nom
-Mettre à jour le nom de l'utilisateur avec son identifiant
-Supprimer un utilisateur avec son identifiant
-Créer un utilisateur (avec son identifiant ?)
+Récupérer la liste de tous les utilisateurs  
+Récupérer un utilisateur par son identifiant  
+Récupérer un utilisateur par son nom  
+Mettre à jour le nom de l'utilisateur avec son identifiant  
+Supprimer un utilisateur avec son identifiant  
+Créer un utilisateur (avec son identifiant ?)  
 
 ## Movie
 
-Récupérer tous les films
-Récupérer un film par identifiant
-Récupérer les films par titre
-Créer un film (avec son identifiant ?)
-Mettre à jour la notation d'un film par son identifiant
-Supprimer un film par son identifiant
+Récupérer tous les films  
+Récupérer un film par identifiant  
+Récupérer les films par titre  
+Créer un film (avec son identifiant ?)  
+Mettre à jour la notation d'un film par son identifiant  
+Supprimer un film par son identifiant  
 
 à faire : Mettre à jour le titre, la notation et le directeur par identifiant
 
 ## Schedule
 
-Récupérer la liste de tous les emplois du temps
-Créer un emploi du temps avec une date et un identifiant de film
-Récupérer les emplois du temps par la date
-Récupérer les emplois du temps par l'identifiant d'un film (à modifier pour renvoyer juste la liste des dates)
-Supprimer un emploi du temps par date
+Récupérer la liste de tous les emplois du temps  
+Créer un emploi du temps avec une date et un identifiant de film  
+Récupérer les emplois du temps par la date  
+Récupérer les emplois du temps par l'identifiant d'un film (à modifier pour renvoyer juste la liste des dates)  
+Supprimer un emploi du temps par date  
 Supprimer un film d'un emploi du temps par date
 
 à faire: vérifier l'existence d'un identifiant de film dans movies ?
 
 ## Booking
 
-Récupérer toutes les réservations
-Récupérer une réservation par identifiant utilisateur
-Récupérer les réservations (id user, liste movies) par date
-Créer une réservation
-Mettre à jour une réservation par identifiant utilisateur
-Supprimer une réservation par identifiant utilisateur
+Récupérer toutes les réservations  
+Récupérer une réservation par identifiant utilisateur  
+Récupérer les réservations (id user, liste movies) par date  
+Créer une réservation  
+Mettre à jour une réservation par identifiant utilisateur  
+Supprimer une réservation par identifiant utilisateur  
 Supprimer un film d'une réservation par identifiant utilisateur, date et identifiant film
 
 # Aide
