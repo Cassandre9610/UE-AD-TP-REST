@@ -35,15 +35,16 @@ def get_json():
     return response(bookings, 200)
 
 
-@app.route("/bookings/users/<userid>", methods=['GET'])
+@app.route("/bookings/user/<userid>", methods=['GET'])
 def get_booking_by_userid(userid):
+    print(userid)
     for booking in bookings:
         if str(booking["userid"]) == str(userid):
-            return response(bookings, 200)
+            return response(booking, 200)
     return response({"error":"User ID not found"}, 404)
 
 
-@app.route("/bookings/<date>", methods=['GET'])
+@app.route("/bookings/date/<date>", methods=['GET'])
 def get_booking_by_date(date):
     data = []
     movies = []
@@ -56,13 +57,20 @@ def get_booking_by_date(date):
     return response({"bookings": data}, 200)
 
 
-@app.route("/bookings/<movieid>", methods=['GET'])
+@app.route("/bookings/movie/<movieid>", methods=['GET'])
 def get_booking_by_movieid(movieid):
-    # TODO
-    return 0
+    data = []
+    for booking in bookings:
+        dates = [
+            booking_date["date"]
+            for booking_date in booking["dates"]
+            if any(str(booked_movie) == str(movieid) for booked_movie in booking_date["movies"])
+        ]
+        data.append({"userid": booking["userid"], "dates": dates})
+    return response({"bookings": data}, 200)
     
 
-@app.route("/bookings/<userid>/<date>", methods=['GET'])
+@app.route("/bookings/user/<userid>/date/<date>", methods=['GET'])
 def get_movies_by_userid_and_date(userid, date):
     for booking in bookings:
         if str(booking["userid"]) == str(userid):
@@ -89,7 +97,7 @@ def add_booking():
     return response({"error": "Movie not found for the given date"}, 404)
 
 
-@app.route("/bookings/<userid>/<date>/<movieid>", methods=['DELETE'])
+@app.route("/bookings/user/<userid>/date/<date>/movie/<movieid>", methods=['DELETE'])
 def delete_movie(userid, date, movieid):
     for index_booking, booking in enumerate(bookings):
         if str(booking["userid"]) == str(userid):
@@ -107,7 +115,7 @@ def delete_movie(userid, date, movieid):
     return response({"error": "Movie not found"}, 404)
 
 
-@app.route("/bookings/users/<userid>", methods=['DELETE'])
+@app.route("/bookings/user/<userid>", methods=['DELETE'])
 def delete_user_from_booking(userid):
     for booking in bookings:
         if str(booking["userid"]) == str(userid):
