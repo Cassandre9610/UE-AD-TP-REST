@@ -1,13 +1,15 @@
-from flask import Flask, render_template, request, jsonify, make_response
+from flask import Flask, render_template, jsonify, make_response
 import copy
 import json
 from werkzeug.exceptions import NotFound
+import requests
 
 app = Flask(__name__)
 
 PORT = 3202
 HOST = '0.0.0.0'
 DB_PATH = '{}/databases/times.json'.format(".")
+MOVIE_SERVICE_HOST = 'localhost:3200'
 
 with open(DB_PATH, "r") as jsf:
    schedule:dict = json.load(jsf)["schedule"]
@@ -26,6 +28,11 @@ def error_not_found(message: str):
    return make_response(jsonify({"error":message}),404)
 
 
+def check_if_movie_exists(movie_id:str):
+   res = requests.get(f"http://{MOVIE_SERVICE_HOST}/movies/{movie_id}")
+   return res.status_code == 200
+
+
 @app.route("/", methods=['GET'])
 def home():
    return "<h1 style='color:blue'>Welcome to the Showtime service!</h1>"
@@ -38,6 +45,9 @@ def get_json():
 
 @app.route("/schedule/<date>/<movie_id>", methods=['POST'])
 def add_schedule(date, movie_id):
+   if not check_if_movie_exists(movie_id):
+      return error_not_found("ce film n'existe pas")
+
    for day in schedule:
       if day["date"] == date:
          if day["movies"].count(movie_id) == 0:
