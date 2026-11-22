@@ -1,7 +1,6 @@
-from flask import Flask, render_template, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response
 import requests
 import json
-from werkzeug.exceptions import NotFound
 
 app = Flask(__name__)
 
@@ -80,21 +79,72 @@ def get_movies_by_userid_and_date(userid, date):
     return response({"error": "Movie not found"}, 404)
 
 
+# @app.route("/bookings", methods=['POST'])
+# def add_booking():
+#     # TODO
+#     req = request.get_json()
+#     if not req:
+#         return response({"error": "Invalid JSON data"}, 400)
+    
+#     data = requests.get(SCHEDULE_API_URL + "/date/" + req["date"]).json()
+#     print(data)
+#     for movie in data["movies"]:
+#         if str(movie) == str(req["movieid"]):
+#             bookings.append(req)
+#             write(bookings) # ajouter correctement le booking à l'utilisateur existant !!!!!!!!!!!!!!!!!!!!!!!!!
+#             return response({"message": "Booking added"}, 200)
+#     return response({"error": "Movie not found for the given date"}, 404)
+
 @app.route("/bookings", methods=['POST'])
 def add_booking():
-    # TODO
     req = request.get_json()
     if not req:
         return response({"error": "Invalid JSON data"}, 400)
     
-    data = requests.get(SCHEDULE_API_URL + "/date/" + req["date"]).json()
-    print(data)
-    for movie in data["movies"]:
-        if str(movie) == str(req["movieid"]):
-            bookings.append(req)
-            write(bookings) # ajouter correctement le booking à l'utilisateur existant !!!!!!!!!!!!!!!!!!!!!!!!!
-            return response({"message": "Booking added"}, 200)
-    return response({"error": "Movie not found for the given date"}, 404)
+    schedule_response = requests.get(
+        SCHEDULE_API_URL + "/date/" + req["date"],
+        timeout=5
+    )
+    
+
+    if schedule_response.status_code != 200:
+        return response({"error": "Nothing found for this date"}, 404)
+
+    schedule_response = schedule_response.json()
+    if str(req["movieid"]) not in [str(movie) for movie in schedule_response["movies"]]:
+        return response({"error": "Movie not found for the given date"}, 404)
+
+    print(schedule_response)
+    for booking in bookings:
+        if str(booking["userid"]) == str(req["userid"]):
+            for booking_date in booking["dates"]:
+                if str(booking_date["date"]) == str(req["date"]):
+                    if str(req["movieid"]) not in [
+                        str(movie) for movie in booking_date["movies"]
+                    ]:
+                        booking_date["movies"].append(req["movieid"])
+                        write(bookings)
+
+                    return response({"message": "Booking added"}, 200)
+
+            booking["dates"].append({
+                "date": req["date"],
+                "movies": [req["movieid"]]
+            })
+            write(bookings)
+            return make_response(jsonify({"message":"Booking added"}), 200)
+    
+    bookings.append({
+        "userid": req["userid"],
+        "dates": [
+            {
+                "date": req["date"],
+                "movies": [req["movieid"]]
+            }
+        ]
+    })
+    write(bookings)
+    return make_response(jsonify({"message":"Booking added"}), 200)
 
 
 @app.route("/bookings/user/<userid>/date/<date>/movie/<movieid>", methods=['DELETE'])
@@ -123,6 +173,7 @@ def delete_user_from_booking(userid):
             write(bookings)
             return response({"message": "User successfully deleted"}, 204)
     return response({"error": "User ID not found"}, 404)
+
 
 if __name__ == "__main__":
    print("Server running in port %s"%(PORT))
