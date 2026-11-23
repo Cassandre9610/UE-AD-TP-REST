@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify, make_response
 import requests
 import json
+from marshmallow import ValidationError
+from schema.bookings_schema import BookingCreateSchema
 
 app = Flask(__name__)
 
@@ -36,7 +38,6 @@ def get_json():
 
 @app.route("/bookings/user/<user_id>", methods=['GET'])
 def get_booking_by_userid(user_id):
-    print(user_id)
     for booking in bookings:
         if str(booking["userid"]) == str(user_id):
             return response(booking, 200)
@@ -81,9 +82,14 @@ def get_movies_by_userid_and_date(user_id, date):
 
 @app.route("/bookings", methods=['POST'])
 def add_booking():
-    req = request.get_json()
+    req = request.get_json(silent=True)
     if not req:
         return response({"error": "Invalid JSON data"}, 400)
+
+    try:
+        req = BookingCreateSchema().load(req)
+    except ValidationError as error:
+        return response({"error": "Invalid JSON data", "details": error.messages}, 400)
     
     schedule_response = requests.get(
         SCHEDULE_API_URL + "/date/" + req["date"],
@@ -98,7 +104,6 @@ def add_booking():
     if str(req["movieid"]) not in [str(movie) for movie in schedule_response["movies"]]:
         return response({"error": "Movie not found for the given date"}, 404)
 
-    print(schedule_response)
     for booking in bookings:
         if str(booking["userid"]) == str(req["userid"]):
             for booking_date in booking["dates"]:
