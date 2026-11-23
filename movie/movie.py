@@ -1,5 +1,8 @@
 from flask import Flask, request, jsonify, make_response
 import json
+from marshmallow import ValidationError
+from schema.movies_schema import MovieCreateSchema
+from uuid import uuid4
 
 app = Flask(__name__)
 
@@ -9,7 +12,6 @@ HOST = '0.0.0.0'
 
 with open('{}/databases/movies.json'.format("."), 'r') as jsf:
     movies = json.load(jsf)["movies"]
-    print(movies)
 
 
 def write(movies):
@@ -57,16 +59,18 @@ def get_movie_bytitle():
     return res
 
 
-@app.route("/movies/movie/<movie_id>", methods=['POST'])
-def add_movie(movie_id):
-    req = request.get_json()
+@app.route("/movies/movie", methods=['POST'])
+def add_movie():
+    req = request.get_json(silent=True)
+    if not req:
+        return response({"error": "Invalid JSON data"}, 400)
 
-    for movie in movies:
-        if str(movie["id"]) == str(movie_id):
-            print(movie["id"])
-            print(movie_id)
-            return response({"error": "Movie already exists"}, 500)
+    try:
+        req = MovieCreateSchema().load(req)
+    except ValidationError as error:
+        return response({"error": "Invalid JSON data", "details": error.messages}, 400)
 
+    req["id"] = str(uuid4())  # ajouter l'uuid manuellement
     movies.append(req)
     write(movies)
     return response({"message": "Movie added"}, 200)
