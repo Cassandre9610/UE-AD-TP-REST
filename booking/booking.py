@@ -34,11 +34,11 @@ def get_json():
     return response(bookings, 200)
 
 
-@app.route("/bookings/user/<userid>", methods=['GET'])
-def get_booking_by_userid(userid):
-    print(userid)
+@app.route("/bookings/user/<user_id>", methods=['GET'])
+def get_booking_by_userid(user_id):
+    print(user_id)
     for booking in bookings:
-        if str(booking["userid"]) == str(userid):
+        if str(booking["userid"]) == str(user_id):
             return response(booking, 200)
     return response({"error":"User ID not found"}, 404)
 
@@ -56,44 +56,28 @@ def get_booking_by_date(date):
     return response({"bookings": data}, 200)
 
 
-@app.route("/bookings/movie/<movieid>", methods=['GET'])
-def get_booking_by_movieid(movieid):
+@app.route("/bookings/movie/<movie_id>", methods=['GET'])
+def get_booking_by_movieid(movie_id):
     data = []
     for booking in bookings:
         dates = [
             booking_date["date"]
             for booking_date in booking["dates"]
-            if any(str(booked_movie) == str(movieid) for booked_movie in booking_date["movies"])
+            if any(str(booked_movie) == str(movie_id) for booked_movie in booking_date["movies"])
         ]
         data.append({"userid": booking["userid"], "dates": dates})
     return response({"bookings": data}, 200)
     
 
-@app.route("/bookings/user/<userid>/date/<date>", methods=['GET'])
-def get_movies_by_userid_and_date(userid, date):
+@app.route("/bookings/user/<user_id>/date/<date>", methods=['GET'])
+def get_movies_by_userid_and_date(user_id, date):
     for booking in bookings:
-        if str(booking["userid"]) == str(userid):
+        if str(booking["userid"]) == str(user_id):
             for d in booking["dates"]:
                 if str(d["date"]) == str(date):
                     return response({"movies": d["movies"]}, 200)
     return response({"error": "Movie not found"}, 404)
 
-
-# @app.route("/bookings", methods=['POST'])
-# def add_booking():
-#     # TODO
-#     req = request.get_json()
-#     if not req:
-#         return response({"error": "Invalid JSON data"}, 400)
-    
-#     data = requests.get(SCHEDULE_API_URL + "/date/" + req["date"]).json()
-#     print(data)
-#     for movie in data["movies"]:
-#         if str(movie) == str(req["movieid"]):
-#             bookings.append(req)
-#             write(bookings) # ajouter correctement le booking à l'utilisateur existant !!!!!!!!!!!!!!!!!!!!!!!!!
-#             return response({"message": "Booking added"}, 200)
-#     return response({"error": "Movie not found for the given date"}, 404)
 
 @app.route("/bookings", methods=['POST'])
 def add_booking():
@@ -132,7 +116,7 @@ def add_booking():
                 "movies": [req["movieid"]]
             })
             write(bookings)
-            return make_response(jsonify({"message":"Booking added"}), 200)
+            return response({"message": "Booking added"}, 200)
     
     bookings.append({
         "userid": req["userid"],
@@ -144,17 +128,17 @@ def add_booking():
         ]
     })
     write(bookings)
-    return make_response(jsonify({"message":"Booking added"}), 200)
+    return response({"message": "Booking added"}, 200)
 
 
-@app.route("/bookings/user/<userid>/date/<date>/movie/<movieid>", methods=['DELETE'])
-def delete_movie(userid, date, movieid):
+@app.route("/bookings/user/<user_id>/date/<date>/movie/<movie_id>", methods=['DELETE'])
+def delete_movie(user_id, date, movie_id):
     for index_booking, booking in enumerate(bookings):
-        if str(booking["userid"]) == str(userid):
+        if str(booking["userid"]) == str(user_id):
             for index_booking_date, booking_date in enumerate(booking["dates"]):
                 if str(booking_date["date"]) == str(date):
                     for index_booked_movie, booked_movie in enumerate(booking_date["movies"]):
-                        if str(booked_movie) == str(movieid):
+                        if str(booked_movie) == str(movie_id):
                             booking_date["movies"].pop(index_booked_movie)
                             if not booking_date["movies"]:
                                 booking["dates"].pop(index_booking_date)
@@ -165,10 +149,10 @@ def delete_movie(userid, date, movieid):
     return response({"error": "Movie not found"}, 404)
 
 
-@app.route("/bookings/user/<userid>", methods=['DELETE'])
-def delete_user_from_booking(userid):
+@app.route("/bookings/user/<user_id>", methods=['DELETE'])
+def delete_user_from_booking(user_id):
     for booking in bookings:
-        if str(booking["userid"]) == str(userid):
+        if str(booking["userid"]) == str(user_id):
             bookings.remove(booking)
             write(bookings)
             return response({"message": "User successfully deleted"}, 204)

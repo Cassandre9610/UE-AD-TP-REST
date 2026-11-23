@@ -1,7 +1,5 @@
-from flask import Flask, render_template, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response
 import json
-from werkzeug.exceptions import NotFound
-import time
 
 app = Flask(__name__)
 
@@ -11,6 +9,7 @@ HOST = '0.0.0.0'
 with open('{}/databases/users.json'.format("."), "r") as jsf:
    users = json.load(jsf)["users"]
 
+
 def write(new_users):
    with open('{}/databases/users.json'.format("."), 'w') as f:
       full = {}
@@ -19,73 +18,77 @@ def write(new_users):
 
 
 def error_not_found(message: str):
-   return make_response(jsonify({"error":message}),404)
+   return make_response(jsonify({"error":message}), 404)
+
+
+def response(message, error_code):
+    return make_response(jsonify(message), error_code)
 
 
 @app.route("/", methods=['GET'])
 def home():
    return "<h1 style='color:blue'>Welcome to the User service!</h1>"
 
+
 @app.route("/json", methods=['GET'])
 def get_json():
-   res = make_response(jsonify(users), 200)
-   return res
+   return response(users, 200)
 
-@app.route("/user/<userid>", methods=['GET'])
-def get_by_id(userid):
+
+@app.route("/user/<user_id>", methods=['GET'])
+def get_by_id(user_id):
    for user in users:
-      if str(user["id"]) == str(userid):
-         res = make_response(jsonify(user),200)
-         return res
+      if str(user["id"]) == str(user_id):
+         return response(user, 200)
       
    return error_not_found("User ID not found")
 
-@app.route("/user/name/<username>", methods=["GET"])
-def get_by_name(username):
+
+@app.route("/user/name/<user_name>", methods=["GET"])
+def get_by_name(user_name):
    for user in users:
-      if str(user["name"]) == str(username):
-         res = make_response(jsonify(user), 200)
-         return res
+      if str(user["name"]) == str(user_name):
+         return response(user, 200)
       
    return error_not_found("User name not found")
 
 
-@app.route("/user/<userid>/name/<new_name>", methods=["PUT"])
-def update_user(userid, new_name):
+@app.route("/user/<user_id>/name/<new_name>", methods=["PUT"])
+def update_user(user_id, new_name):
    for user in users:
-      if str(user["id"]) == userid:
+      if str(user["id"]) == str(user_id):
          user["name"] = new_name
-         res = make_response(jsonify(user), 200)
          write(users)
-         return res
+         return response(user, 200)
       
    return error_not_found("User ID not found")
 
-@app.route("/user/<userid>", methods=['DELETE'])
-def delete_user(userid):
+
+@app.route("/user/<user_id>", methods=['DELETE'])
+def delete_user(user_id):
    for user in users:
-      if str(user["id"]) == str(userid):
+      if str(user["id"]) == str(user_id):
          users.remove(user)
          write(users)
-         return make_response(jsonify(user), 200)
+         return response(user, 200)
       
    return error_not_found("User ID not found")
 
-@app.route("/user/<userid>", methods=['POST'])
-def create_user(userid):
+
+@app.route("/user/<user_id>", methods=['POST'])
+def create_user(user_id):
    req = request.get_json()
 
    for user in users:
-      if str(user["id"]) == str(userid):
+      if str(user["id"]) == str(user_id):
             print(user["id"])
-            print(userid)
-            return make_response(jsonify({"error":"user ID already exists"}),500)
+            print(user_id)
+            return response({"error": "User ID already exists"}, 500)
 
    # req["last_used"] = time.time_ns() # Pas certain de la methode
    users.append(req)
    write(users)
-   res = make_response(jsonify({"message":"user added"}),200)
-   return res
+   return response({"message":"User added"}, 200)
 
 
 if __name__ == "__main__":
