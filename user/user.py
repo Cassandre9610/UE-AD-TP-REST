@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify, make_response
 import json
+from marshmallow import ValidationError
+from schema.users_schema import UserCreateSchema
 
 app = Flask(__name__)
 
@@ -77,12 +79,17 @@ def delete_user(user_id):
 
 @app.route("/user/<user_id>", methods=['POST'])
 def create_user(user_id):
-   req = request.get_json()
+   req = request.get_json(silent=True)
+   if not req:
+      return response({"error": "Invalid JSON data"}, 400)
+
+   try:
+      req = UserCreateSchema().load(req)
+   except ValidationError as error:
+      return response({"error": "Invalid JSON data", "details": error.messages}, 400)
 
    for user in users:
       if str(user["id"]) == str(user_id):
-            print(user["id"])
-            print(user_id)
             return response({"error": "User ID already exists"}, 500)
 
    # req["last_used"] = time.time_ns() # Pas certain de la methode
