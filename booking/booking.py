@@ -3,13 +3,14 @@ import requests
 import json
 from marshmallow import ValidationError
 from schema.bookings_schema import BookingCreateSchema
+import os
 
 app = Flask(__name__)
 
 PORT = 3201
 HOST = '0.0.0.0'
 
-SCHEDULE_API_URL = "http://127.0.0.1:3202/schedule"
+SCHEDULE_HOST = os.environ.get('SCHEDULE_HOST') or "127.0.0.1:3202"
 
 
 with open('{}/databases/bookings.json'.format("."), "r") as jsf:
@@ -92,10 +93,9 @@ def add_booking():
         return response({"error": "Invalid JSON data", "details": error.messages}, 400)
     
     schedule_response = requests.get(
-        SCHEDULE_API_URL + "/date/" + req["date"],
+        f"http://{SCHEDULE_HOST}/schedule/date/{req["date"]}",
         timeout=5
     )
-    
 
     if schedule_response.status_code != 200:
         return response({"error": "Nothing found for this date"}, 404)

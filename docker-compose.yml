@@ -12,6 +12,8 @@ services:
       dockerfile: booking/Dockerfile
     ports:
       - "3201:3201"
+    environment:
+      - SCHEDULE_HOST=schedule:3202
 
   schedule:
     build: 
@@ -19,6 +21,8 @@ services:
       dockerfile: schedule/Dockerfile
     ports:
       - "3202:3202"
+    environment:
+      - MOVIE_SERVICE_HOST=movie:3200
 
   user: 
     build: 

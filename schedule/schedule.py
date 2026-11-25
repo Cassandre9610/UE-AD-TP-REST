@@ -2,13 +2,14 @@ from flask import Flask, jsonify, make_response
 import copy
 import json
 import requests
+import os
 
 app = Flask(__name__)
 
 PORT = 3202
 HOST = '0.0.0.0'
 DB_PATH = '{}/databases/times.json'.format(".")
-MOVIE_SERVICE_HOST = 'localhost:3200'
+MOVIE_SERVICE_HOST = os.environ.get('MOVIE_SERVICE_HOST') or 'localhost:3200'
 
 with open(DB_PATH, "r") as jsf:
    schedule:dict = json.load(jsf)["schedule"]
