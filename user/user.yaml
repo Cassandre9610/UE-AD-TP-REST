@@ -1,0 +1,354 @@
+openapi: 3.0.3
+info:
+  title: User Service API
+  description: API for managing users and issuing access tokens.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:3203
+    description: Local development server
+
+tags:
+  - name: users
+    description: User lookup and management
+  - name: authentication
+    description: Access token operations
+
+paths:
+  /:
+    get:
+      summary: Service home page
+      description: Returns an HTML welcome message.
+      responses:
+        "200":
+          description: HTML welcome message
+          content:
+            text/html:
+              schema:
+                type: string
+                example: "<h1 style='color:blue'>Welcome to the User service!</h1>"
+
+  /json:
+    get:
+      tags:
+        - users
+      summary: Retrieve all users
+      description: Restricted to administrators.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "401":
+          description: Missing or invalid token, or caller is not an administrator
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+
+  /user/{user_id}:
+    get:
+      tags:
+        - users
+      summary: Retrieve a user by ID
+      description: Users can retrieve their own record; administrators can retrieve any user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Missing or invalid token, or caller is not authorized for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+        "404":
+          description: User ID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags:
+        - users
+      summary: Delete a user
+      description: Users can delete their own record; administrators can delete any user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Deleted user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Missing or invalid token, or caller is not authorized for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+        "404":
+          description: User ID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      tags:
+        - users
+      summary: Create a user
+      description: >
+        Creates a user from the JSON body. The path ID is checked for an
+        existing user; the created user's ID is taken from the body.
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+      responses:
+        "200":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Invalid or missing JSON data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "500":
+          description: User ID already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /user/name/{user_name}:
+    get:
+      tags:
+        - users
+      summary: Retrieve a user by exact name
+      description: Users can retrieve their own record; administrators can retrieve any user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user_name
+          in: path
+          required: true
+          description: Exact user name
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Missing or invalid token, or caller is not authorized for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+        "404":
+          description: User name not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /user/{user_id}/name/{new_name}:
+    put:
+      tags:
+        - users
+      summary: Change a user's name
+      description: >
+        Changes the name for the authenticated user. The implementation reads
+        the JWT identity to check authorization.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - name: new_name
+          in: path
+          required: true
+          description: New user name
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Caller is not authorized for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthError"
+        "404":
+          description: User ID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /login:
+    post:
+      tags:
+        - authentication
+      summary: Obtain an access token
+      description: Issues a JWT for a user identified by their ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Access token issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "404":
+          description: User ID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      description: User identifier
+      schema:
+        type: string
+        example: chris_rivers
+  schemas:
+    User:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          example: chris_rivers
+        name:
+          type: string
+          example: Chris Rivers
+        last_active:
+          type: integer
+          format: int64
+          description: Present on seeded records
+          example: 1360031010
+        last_used:
+          type: integer
+          format: int64
+          description: Nanosecond timestamp assigned when a user is created
+        admin:
+          type: boolean
+          description: Indicates an administrator account
+    UserCreate:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: chris_rivers
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Chris Rivers
+    LoginRequest:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: ID of the user requesting a token
+          example: chris_rivers
+    LoginResponse:
+      type: object
+      required:
+        - access_token
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+    Message:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: User added
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: User ID not found
+    ValidationError:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: Invalid JSON data
+        details:
+          type: object
+          additionalProperties: true
+    AuthError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: You don't have access to that information
+        msg:
+          type: string
+          description: Authentication error generated by JWT middleware

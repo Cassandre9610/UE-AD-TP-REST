@@ -1,0 +1,340 @@
+openapi: 3.0.3
+info:
+  title: Booking Service API
+  description: API for retrieving and managing cinema bookings.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:3201
+    description: Local development server
+
+tags:
+  - name: bookings
+    description: Operations for cinema bookings
+
+paths:
+  /:
+    get:
+      summary: Service home page
+      description: Returns an HTML welcome message.
+      responses:
+        "200":
+          description: HTML welcome message
+          content:
+            text/html:
+              schema:
+                type: string
+                example: "<h1 style='color:blue'>Welcome to the Booking service!</h1>"
+
+  /json:
+    get:
+      tags:
+        - bookings
+      summary: Retrieve all bookings
+      responses:
+        "200":
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+
+  /bookings:
+    post:
+      tags:
+        - bookings
+      summary: Add a movie to a user's bookings
+      description: >
+        Adds the movie to the user's bookings for the given date. The movie must
+        already be scheduled for that date. Repeating an existing booking leaves
+        it unchanged.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingCreate"
+      responses:
+        "200":
+          description: Booking added or already present
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Invalid or missing JSON data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "404":
+          description: No schedule exists for the date or the movie is not scheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Schedule service request failed
+
+  /bookings/user/{user_id}:
+    get:
+      tags:
+        - bookings
+      summary: Retrieve a user's bookings
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: User booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: No booking found for the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags:
+        - bookings
+      summary: Delete all bookings for a user
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "204":
+          description: User bookings deleted
+        "404":
+          description: No booking found for the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /bookings/date/{date}:
+    get:
+      tags:
+        - bookings
+      summary: Retrieve bookings for a date
+      parameters:
+        - $ref: "#/components/parameters/Date"
+      responses:
+        "200":
+          description: Users and their movies booked for the date
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - bookings
+                properties:
+                  bookings:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserDateBooking"
+
+  /bookings/movie/{movie_id}:
+    get:
+      tags:
+        - bookings
+      summary: Retrieve users and dates for a movie booking
+      parameters:
+        - $ref: "#/components/parameters/MovieId"
+      responses:
+        "200":
+          description: Users and dates associated with the movie
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - bookings
+                properties:
+                  bookings:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserMovieBooking"
+
+  /bookings/user/{user_id}/date/{date}:
+    get:
+      tags:
+        - bookings
+      summary: Retrieve a user's movies booked for a date
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/Date"
+      responses:
+        "200":
+          description: Movies booked by the user for the date
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - movies
+                properties:
+                  movies:
+                    type: array
+                    items:
+                      type: string
+                      description: Movie identifier
+        "404":
+          description: No matching booking found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /bookings/user/{user_id}/date/{date}/movie/{movie_id}:
+    delete:
+      tags:
+        - bookings
+      summary: Remove a movie from a user's booking
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/Date"
+        - $ref: "#/components/parameters/MovieId"
+      responses:
+        "204":
+          description: Movie removed from the booking
+        "404":
+          description: Movie not found in the booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  parameters:
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      description: User identifier
+      schema:
+        type: string
+    Date:
+      name: date
+      in: path
+      required: true
+      description: Booking date in YYYYMMDD format
+      schema:
+        type: string
+        pattern: '^\d{8}$'
+        example: "20151201"
+    MovieId:
+      name: movie_id
+      in: path
+      required: true
+      description: Movie identifier
+      schema:
+        type: string
+
+  schemas:
+    Booking:
+      type: object
+      required:
+        - userid
+        - dates
+      properties:
+        userid:
+          type: string
+          description: User identifier
+          example: chris_rivers
+        dates:
+          type: array
+          items:
+            $ref: "#/components/schemas/DateBooking"
+    DateBooking:
+      type: object
+      required:
+        - date
+        - movies
+      properties:
+        date:
+          type: string
+          pattern: '^\d{8}$'
+          example: "20151201"
+        movies:
+          type: array
+          items:
+            type: string
+            description: Movie identifier
+    BookingCreate:
+      type: object
+      additionalProperties: false
+      required:
+        - userid
+        - date
+        - movieid
+      properties:
+        userid:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: chris_rivers
+        date:
+          type: string
+          pattern: '^\d{8}$'
+          example: "20151201"
+        movieid:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Movie identifier
+          example: 267eedb8-0f5d-42d5-8f43-72426b9fb3e6
+    UserDateBooking:
+      type: object
+      required:
+        - userid
+        - movies
+      properties:
+        userid:
+          type: string
+        movies:
+          type: array
+          items:
+            type: string
+            description: Movie identifier
+    UserMovieBooking:
+      type: object
+      required:
+        - userid
+        - dates
+      properties:
+        userid:
+          type: string
+        dates:
+          type: array
+          items:
+            type: string
+            pattern: '^\d{8}$'
+    Message:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: Booking added
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: User ID not found
+    ValidationError:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: Invalid JSON data
+        details:
+          type: object
+          additionalProperties: true

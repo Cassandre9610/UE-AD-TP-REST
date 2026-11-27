@@ -1,0 +1,207 @@
+openapi: 3.0.3
+info:
+  title: Schedule Service API
+  description: API for managing movie showtimes.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:3202
+    description: Local development server
+
+tags:
+  - name: schedule
+    description: Operations for movie showtimes
+
+paths:
+  /:
+    get:
+      summary: Service home page
+      description: Returns an HTML welcome message.
+      responses:
+        "200":
+          description: HTML welcome message
+          content:
+            text/html:
+              schema:
+                type: string
+                example: "<h1 style='color:blue'>Welcome to the Showtime service!</h1>"
+
+  /json:
+    get:
+      tags:
+        - schedule
+      summary: Retrieve the full schedule
+      responses:
+        "200":
+          description: List of scheduled dates and movies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Showtime"
+
+  /schedule/date/{date}:
+    get:
+      tags:
+        - schedule
+      summary: Retrieve movies scheduled for a date
+      parameters:
+        - $ref: "#/components/parameters/Date"
+      responses:
+        "200":
+          description: Showtime found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Showtime"
+        "404":
+          description: No schedule found for the date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags:
+        - schedule
+      summary: Delete all showtimes for a date
+      parameters:
+        - $ref: "#/components/parameters/Date"
+      responses:
+        "200":
+          description: Updated schedule after deleting the date
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Showtime"
+        "404":
+          description: No showtime found for the date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /schedule/movie/{movie_id}:
+    get:
+      tags:
+        - schedule
+      summary: Retrieve dates when a movie is scheduled
+      parameters:
+        - $ref: "#/components/parameters/MovieId"
+      responses:
+        "200":
+          description: Dates when the movie is scheduled
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: Scheduled date
+                  example: "20151201"
+        "404":
+          description: No schedule found for the movie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /schedule/date/{date}/movie/{movie_id}:
+    post:
+      tags:
+        - schedule
+      summary: Add a movie to a date
+      description: >
+        Adds the movie to the schedule for the date. The movie must exist in the
+        Movie service. The operation returns an error if the movie is already
+        scheduled for that date.
+      parameters:
+        - $ref: "#/components/parameters/Date"
+        - $ref: "#/components/parameters/MovieId"
+      responses:
+        "201":
+          description: Movie successfully scheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Showtime"
+        "404":
+          description: Movie does not exist in the Movie service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Movie is already scheduled for this date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags:
+        - schedule
+      summary: Remove a movie from a date
+      description: Removes the date from the schedule if it has no movies left.
+      parameters:
+        - $ref: "#/components/parameters/Date"
+        - $ref: "#/components/parameters/MovieId"
+      responses:
+        "200":
+          description: Updated schedule after removing the movie
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Showtime"
+        "404":
+          description: Movie not found for the given date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  parameters:
+    Date:
+      name: date
+      in: path
+      required: true
+      description: Scheduled date (typically YYYYMMDD)
+      schema:
+        type: string
+        example: "20151201"
+    MovieId:
+      name: movie_id
+      in: path
+      required: true
+      description: Movie identifier
+      schema:
+        type: string
+        example: 267eedb8-0f5d-42d5-8f43-72426b9fb3e6
+
+  schemas:
+    Showtime:
+      type: object
+      required:
+        - date
+        - movies
+      properties:
+        date:
+          type: string
+          description: Scheduled date
+          example: "20151201"
+        movies:
+          type: array
+          description: Movie identifiers scheduled for the date
+          items:
+            type: string
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: Movie not found
